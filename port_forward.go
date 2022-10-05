@@ -1,10 +1,12 @@
 package main
 
 import (
-	"flag"
+	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
 )
 
 var remoteServerHost string
@@ -12,18 +14,62 @@ var remoteServerHost string
 // var localHP string
 
 func main() {
-	remoteH := flag.String("remote", "127.0.0.1", "Remote machine IP")
-	remoteP := flag.String("rport", "8080", "Remote machine Port")
+	banner("materials/go.txt")
+	menu()
+}
 
-	localH := flag.String("lhost", "0.0.0.0", "Local IP")
-	localP := flag.String("lport", "8080", "Local port")
+func banner(path string) {
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
-	flag.Parse()
+	scanner := bufio.NewScanner(file)
 
-	localHP := *localH + ":" + *localP
-	remoteServerHost = *remoteH + ":" + *remoteP
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
 
-	log.Println(remoteServerHost)
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func menu() {
+	var option int
+	banner("materials/menu.txt")
+	fmt.Print("Input your option: ")
+	fmt.Scan(&option)
+
+	switch option {
+	case 1:
+		fmt.Println("Port forwarding configuration")
+	case 2:
+		fmt.Println("Start")
+		fmt.Println()
+
+		var remoteH, remoteP, localH, localP string
+
+		fmt.Print("Remote host: ")
+		fmt.Scan(&remoteH)
+		fmt.Print("Remote port: ")
+		fmt.Scan(&remoteP)
+		fmt.Print("Local host: ")
+		fmt.Scan(&localH)
+		fmt.Print("Local port: ")
+		fmt.Scan(&localP)
+
+		localHP := localH + ":" + localP
+		remoteServerHost = remoteH + ":" + remoteP
+		Launch(localHP)
+	default:
+		os.Exit(0)
+	}
+}
+
+func Launch(localHP string) {
 	local, err := net.Listen("tcp", localHP)
 	if err != nil {
 		log.Fatal(err)
@@ -37,7 +83,6 @@ func main() {
 		}
 		go handleConn(conn)
 	}
-
 }
 
 func forward(source net.Conn, dest net.Conn) {
